@@ -2,9 +2,9 @@ const mongoose = require("mongoose");
 
 const profileSchema = new mongoose.Schema(
   {
-    fullName: {
+    name: {
       type: String,
-      required: false,
+      required: true,
     },
     bio: {
       type: String,
@@ -20,9 +20,9 @@ const profileSchema = new mongoose.Schema(
       ref: "Media", // Assuming your media model is named 'Media'
       required: false,
     },
-    dob: {
-      type: Date,
-      required: false,
+    birthYear: {
+      type: Number,
+      required: true,
     },
     location: {
       type: String,
@@ -31,7 +31,7 @@ const profileSchema = new mongoose.Schema(
     gender: {
       type: String,
       enum: ["male", "female"],
-      required: false,
+      required: true,
     },
   },
   {
@@ -39,6 +39,6 @@ const profileSchema = new mongoose.Schema(
   }
 );
 
-const Profile = mongoose.model('Profile', profileSchema);
+const Profile = mongoose.model("Profile", profileSchema);
 
-module.exports = {profileSchema, Profile};
+module.exports = { profileSchema, Profile };

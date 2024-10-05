@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
-const ProfileSchema = require("./Profile");
-const FriendSchema = require("./Friend");
-const SettingsSchema = require("./Settings");
+const { profileSchema } = require("./Profile");
+const { friendSchema } = require("./Friend");
+const { settingsSchema } = require("./Settings");
 
 const validateContactInfo = function () {
   return this.email || this.phone;
@@ -30,9 +30,9 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    profile: ProfileSchema,
-    friends: [FriendSchema],
-    settings: SettingsSchema,
+    profile: profileSchema,
+    friends: [friendSchema],
+    settings: settingsSchema,
   },
   {
     timestamps: true,
