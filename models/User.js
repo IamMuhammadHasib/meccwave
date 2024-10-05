@@ -3,7 +3,7 @@ const ProfileSchema = require("./Profile");
 const FriendSchema = require("./Friend");
 const SettingsSchema = require("./Settings");
 
-const validateContactInfo = (value) => {
+const validateContactInfo = function () {
   return this.email || this.phone;
 };
 
