@@ -1,7 +1,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
-const { generateCsrfToken } = require("../middlewares/csrfMiddleware");
+const { setCsrfToken } = require("../middlewares/csrfMiddleware");
 const { User } = require("../models/User");
 
 class AuthController {
@@ -91,14 +91,10 @@ class AuthController {
         expiresIn: "1h",
       });
 
-      // Generate CSRF token
-      const csrfToken = generateCsrfToken(req, res);
-
       // Send response with JWT and CSRF token
       res.status(200).json({
         message: "Login successful",
         token,
-        csrfToken,
       });
     } catch (error) {
       console.error(error);
@@ -106,9 +102,9 @@ class AuthController {
     }
   }
 
-  static generateCsrfToken(req, res) {
+  static getCsrfToken(req, res) {
     try {
-      const csrfToken = generateCsrfToken(req, res); // this will set the cookie
+      const csrfToken = setCsrfToken(req, res); // this will set the cookie
       res.status(200).json({ csrfToken });
     } catch (error) {
       console.error("Error generating CSRF token", error);
