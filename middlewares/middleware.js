@@ -8,7 +8,7 @@ const { csrfProtection } = require("./csrfMiddleware");
 module.exports = (app) => {
   app.use(
     cors({
-      origin: "http://localhost:5173", // Allow requests from your frontend
+      origin: "*", // Allow requests from your frontend
       credentials: true, // Allow cookies to be sent/received
     })
   );
