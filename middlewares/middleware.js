@@ -6,7 +6,12 @@ const passport = require("passport");
 const { csrfProtection } = require("./csrfMiddleware");
 
 module.exports = (app) => {
-  app.use(cors());
+  app.use(
+    cors({
+      origin: "http://localhost:5173", // Allow requests from your frontend
+      credentials: true, // Allow cookies to be sent/received
+    })
+  );
   app.use(morgan("dev"));
   app.use(cookieParser());
   app.use(bodyParser.json());
@@ -16,7 +21,8 @@ module.exports = (app) => {
   app.use((req, res, next) => {
     if (
       ["POST", "PUT", "DELETE", "PATCH"].includes(req.method) &&
-      req.isAuthenticated && req.isAuthenticated()
+      req.isAuthenticated &&
+      req.isAuthenticated()
     ) {
       return csrfProtection(req, res, next);
     }
