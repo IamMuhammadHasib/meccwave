@@ -1,5 +1,6 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const { v4: uuidv4 } = require("uuid");
 
 const { setCsrfToken } = require("../middlewares/csrfMiddleware");
 const { User } = require("../models/User");
@@ -8,13 +9,6 @@ class AuthController {
   static async register(req, res) {
     try {
       const { name, gender, birthYear, emailPhone, password } = req.body;
-
-      // validate
-      if (!name || !gender || !birthYear || !emailPhone || !password) {
-        return res
-          .status(400)
-          .json({ message: "All required fields must be provided" });
-      }
 
       // determine email or phone
       const isEmail = /\S+@\S+\.\S+/.test(emailPhone); // email regex
@@ -63,13 +57,6 @@ class AuthController {
     try {
       const { emailPhone, password } = req.body;
 
-      // validate
-      if (!emailPhone || !password) {
-        return res
-          .status(400)
-          .json({ message: "Email/Phone and password are required" });
-      }
-
       // determine if email or phone
       const isEmail = /\S+@\S+\.\S+/.test(emailPhone); // Basic email regex
       const contactField = isEmail
@@ -113,16 +100,21 @@ class AuthController {
   }
 
   static async generateUniqueUsername(name) {
-    const username = name.toLowerCase().replace(/\s+/g, "");
-    let existingUser = await User.findOne({ username });
-    let counter = 0;
+    const username = name.toLowerCase().replace(/\s+/g, ""); // removing spaces
+    // console.log(username);
 
+    let uniquePart = uuidv4().slice(0, 6);
+    let existingUser = await User.findOne({
+      username: `${username}-${uniquePart}`,
+    });
     while (existingUser) {
-      counter++;
-      existingUser = await User.findOne({ username: `${username}${counter}` });
+      uniquePart = uuidv4().slice(0, 6);
+      existingUser = await User.findOne({
+        username: `${username}-${uniquePart}`,
+      });
     }
 
-    return `${username}${counter}`;
+    return `${username}-${uniquePart}`;
   }
 }
 
