@@ -1,6 +1,6 @@
 const { z } = require("zod");
 
-const { PASSWORD_REGEX } = require("../utils/constants");
+const { PASSWORD_REGEX } = require("../utils/constants/regex");
 
 const passwordSchema = z
   .string()

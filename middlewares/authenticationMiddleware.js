@@ -8,6 +8,7 @@ const authenticate = (req, res, next) => {
   }
 
   const token = authHeader.split(' ')[1];
+  // console.log(token);
 
   jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
     if (err) {
@@ -16,6 +17,7 @@ const authenticate = (req, res, next) => {
 
     // Attach the decoded token (which contains user information) to the request
     req.user = decoded;
+    // console.log(req.user);
     next();
   });
 };

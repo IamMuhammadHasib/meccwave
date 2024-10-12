@@ -1,21 +1,34 @@
 const { Friendship } = require("../models/Friendship");
+const userFields = require("../utils/constants/userFields");
 
 class FriendController {
   static async getFriends(req, res) {
     try {
-      const userId = req.user._id;
+      const userId = req.user.id;
+
+      // Find all friendships where the current user is either user1 or user2
       const friends = await Friendship.find({
         $or: [{ user1: userId }, { user2: userId }],
       })
-        .populate("user1", "username profile")
-        .populate("user2", "username profile");
+        .populate({
+          path: "user1",
+          select: "username profile",
+          populate: { path: "profile", select: userFields.REF_BASIC_PROFILE },
+        })
+        .populate({
+          path: "user2",
+          select: "username profile",
+          populate: { path: "profile", select: userFields.REF_BASIC_PROFILE },
+        });
 
+      // Create a list of friends excluding the current user
       const friendList = friends.map((f) =>
         f.user1._id.equals(userId) ? f.user2 : f.user1
       );
 
-      res.staus(200).json({ statusCode: 200, friends: friendList });
+      res.status(200).json({ statusCode: 200, friends: friendList });
     } catch (error) {
+      console.log(error);
       res
         .status(500)
         .json({ statusCode: 500, message: "Error fetching friends", error });
@@ -23,8 +36,9 @@ class FriendController {
   }
 
   static async deleteFriend(req, res) {
-    const userId = req.user._id;
+    const userId = req.user.id;
     const friendId = req.params.id;
+    console.log(userId, friendId);
 
     const friendship = await Friendship.findOneAndDelete({
       $or: [
