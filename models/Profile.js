@@ -6,6 +6,10 @@ const profileSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    intro: {
+      type: String,
+      required: false,
+    },
     bio: {
       type: String,
       required: false,

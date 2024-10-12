@@ -1,5 +1,5 @@
 const { z } = require("zod");
-const { PHONE_REGEX } = require("../utils/constants");
+const { PHONE_REGEX } = require("../utils/constants/regex");
 
 const numericWithOnePlus = /^(\+?\d+|\d+\+?\d*)$/;
 

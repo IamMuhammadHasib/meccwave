@@ -4,14 +4,15 @@ const { v4: uuidv4 } = require("uuid");
 
 const { setCsrfToken } = require("../middlewares/csrfMiddleware");
 const { User } = require("../models/User");
+const { Profile } = require("../models/Profile");
 
 class AuthController {
   static async register(req, res) {
     try {
       const { name, gender, birthYear, emailPhone, password } = req.body;
 
-      // determine email or phone
-      const isEmail = /\S+@\S+\.\S+/.test(emailPhone); // email regex
+      // email or phone
+      const isEmail = /\S+@\S+\.\S+/.test(emailPhone);
       const contactField = isEmail
         ? { email: emailPhone }
         : { phone: emailPhone };
@@ -25,24 +26,24 @@ class AuthController {
       }
 
       const username = await AuthController.generateUniqueUsername(name);
-
-      // Hash the password
       const hashedPassword = await bcrypt.hash(password, 10);
+
+      const profile = new Profile({
+        name,
+        gender,
+        birthYear,
+      });
+      await profile.save();
 
       const user = new User({
         username,
         ...contactField,
         password: hashedPassword,
-        profile: {
-          name,
-          gender,
-          birthYear,
-        },
+        profile: profile._id,
       });
 
       await user.save();
 
-      // JWT token
       const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
         expiresIn: "1h",
       });
@@ -111,7 +112,6 @@ class AuthController {
 
   static async generateUniqueUsername(name) {
     const username = name.toLowerCase().replace(/\s+/g, ""); // removing spaces
-    // console.log(username);
 
     let uniquePart = uuidv4().slice(0, 6);
     let existingUser = await User.findOne({

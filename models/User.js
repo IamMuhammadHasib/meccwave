@@ -29,8 +29,16 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    profile: profileSchema,
-    settings: settingsSchema,
+    profile: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Profile", // Reference to Profile model
+      required: true,
+    },
+    settings: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Settings", // Assuming Settings is another model
+      required: false,
+    },
   },
   {
     timestamps: true,
