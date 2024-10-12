@@ -1,6 +1,5 @@
 const mongoose = require("mongoose");
 const { profileSchema } = require("./Profile");
-const { friendSchema } = require("./Friend");
 const { settingsSchema } = require("./Settings");
 
 const validateContactInfo = function () {
@@ -31,7 +30,6 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
     profile: profileSchema,
-    friends: [friendSchema],
     settings: settingsSchema,
   },
   {

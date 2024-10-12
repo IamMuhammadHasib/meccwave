@@ -7,7 +7,7 @@ const connectDB = async () => {
     // await mongoose.connect(process.env.MONGO_URI);
     await mongoose.connect(process.env.MONGO_URI, clientOptions);
     await mongoose.connection.db.admin().command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    console.log("Connected to MongoDB!");
   } catch (error) {
     console.log("MongoDB connection error:", error);
     process.exit(1); // Exit process with failure

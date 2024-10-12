@@ -18,9 +18,10 @@ class AuthController {
 
       const existingUser = await User.findOne(contactField);
       if (existingUser) {
-        return res
-          .status(400)
-          .json({ message: "Email or phone is already in use" });
+        return res.status(400).json({
+          statusCode: 400,
+          message: "Email or phone is already in use",
+        });
       }
 
       const username = await AuthController.generateUniqueUsername(name);
@@ -46,10 +47,14 @@ class AuthController {
         expiresIn: "1h",
       });
 
-      res.status(201).json({ message: "User registered successfully", token });
+      res.status(201).json({
+        statusCode: 201,
+        message: "User registered successfully",
+        token,
+      });
     } catch (error) {
       console.error(error);
-      res.status(500).json({ message: "Server error" });
+      res.status(500).json({ statusCode: 500, message: "Server error" });
     }
   }
 
@@ -65,12 +70,16 @@ class AuthController {
 
       const user = await User.findOne(contactField);
       if (!user) {
-        return res.status(404).json({ message: "User not found" });
+        return res
+          .status(404)
+          .json({ statusCode: 404, message: "User not found" });
       }
 
       const isMatch = await bcrypt.compare(password, user.password);
       if (!isMatch) {
-        return res.status(400).json({ message: "Invalid credentials" });
+        return res
+          .status(400)
+          .json({ statusCode: 400, message: "Invalid credentials" });
       }
 
       // Generate JWT token
@@ -80,22 +89,23 @@ class AuthController {
 
       // Send response with JWT and CSRF token
       res.status(200).json({
+        statusCode: 200,
         message: "Login successful",
         token,
       });
     } catch (error) {
       console.error(error);
-      res.status(500).json({ message: "Server error" });
+      res.status(500).json({ statusCode: 500, message: "Server error" });
     }
   }
 
   static getCsrfToken(req, res) {
     try {
       const csrfToken = setCsrfToken(req, res); // this will set the cookie
-      res.status(200).json({ csrfToken });
+      res.status(200).json({ statusCode: 200, csrfToken });
     } catch (error) {
       console.error("Error generating CSRF token", error);
-      res.status(500).json({ message: "Server error" });
+      res.status(500).json({ statusCode: 500, message: "Server error" });
     }
   }
 
