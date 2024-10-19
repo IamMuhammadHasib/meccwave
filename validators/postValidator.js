@@ -2,7 +2,7 @@ const { z } = require("zod");
 
 const mediaItemSchema = z.object({
   type: z.enum(["image", "video"]),
-  url: z.string().url(),
+  url: z.string(),
 });
 
 const postSchema = z
