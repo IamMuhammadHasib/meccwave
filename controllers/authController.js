@@ -48,10 +48,30 @@ class AuthController {
         expiresIn: "1h",
       });
 
+      // Populate the profile data
+      const populatedUser = await User.findById(user.id)
+        .populate({
+          path: "profile",
+          select: "name profilePicture", // Only return the necessary fields from the Profile
+          populate: {
+            path: "profilePicture", // Assuming profilePicture references a Media model
+            select: "url", // Only return the URL of the profile picture
+          },
+        })
+        .select("username profile");
+
       res.status(201).json({
         statusCode: 201,
         message: "User registered successfully",
         token,
+        user: {
+          id: populatedUser.id,
+          username: populatedUser.username,
+          profile: {
+            name: populatedUser.profile.name,
+            profilePicture: populatedUser.profile.profilePicture?.url || null, // Return profile picture URL if available
+          },
+        },
       });
     } catch (error) {
       console.error(error);
@@ -88,11 +108,29 @@ class AuthController {
         expiresIn: "1h",
       });
 
-      // Send response with JWT and CSRF token
+      const populatedUser = await User.findById(user.id)
+        .populate({
+          path: "profile",
+          select: "name profilePicture",
+          populate: {
+            path: "profilePicture",
+            select: "url",
+          },
+        })
+        .select("username profile");
+
       res.status(200).json({
         statusCode: 200,
         message: "Login successful",
         token,
+        user: {
+          id: populatedUser.id,
+          username: populatedUser.username,
+          profile: {
+            name: populatedUser.profile.name,
+            profilePicture: populatedUser.profile.profilePicture?.url || null,
+          },
+        },
       });
     } catch (error) {
       console.error(error);
