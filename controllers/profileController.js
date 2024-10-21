@@ -4,9 +4,7 @@ const userFields = require("../utils/constants/userFields");
 class ProfileController {
   static async getProfile(req, res) {
     try {
-      let userId;
-      if(req.params.userId) userId = req.params.userId;
-      else userId = req.user.id;
+      const userId = req.params.userId;
 
       const userProfile = await User.findById(userId)
         .select(userFields.FULL_PROFILE)

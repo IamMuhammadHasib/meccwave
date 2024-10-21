@@ -1,5 +1,5 @@
 const { User } = require("../models/User");
-const userFields = require("../utils/constants/userFields");
+const getFriendshipStatus = require("../utils/functions/friendShipUtils");
 
 class SearchController {
   static async getPeople(req, res) {
@@ -47,10 +47,18 @@ class SearchController {
         },
       ]);
 
+      const loggedInUserId = req.user.id;
+      const peopleWithStatus = await Promise.all(
+        people.map(async (person) => {
+          const status = await getFriendshipStatus(loggedInUserId, person._id.toString());
+          return {...person, status};
+        })
+      );
+
       res.status(200).json({
         statusCode: 200,
         message: "Search results retrieved successfully",
-        results: people,
+        results: peopleWithStatus,
       });
     } catch (error) {
       console.error(error);
