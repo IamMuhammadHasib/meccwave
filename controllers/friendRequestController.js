@@ -5,7 +5,7 @@ const userFields = require("../utils/constants/userFields");
 class FriendRequestController {
   static async sendFriendRequest(req, res) {
     try {
-      const { recipientId } = req.body;
+      const recipientId = req.params.id;
       const requesterId = req.user.id;
 
       if (recipientId === requesterId)
@@ -84,7 +84,7 @@ class FriendRequestController {
   }
 
   static async acceptFriendRequest(req, res) {
-    const { requesterId } = req.body;
+    const requesterId = req.params.id;
     const recipientId = req.user.id;
 
     const request = await FriendRequest.findOne({
