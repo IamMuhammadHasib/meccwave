@@ -1,5 +1,5 @@
 const { User } = require("../models/User");
-const getFriendshipStatus = require("../utils/functions/friendShipUtils");
+const getFriendshipStatus = require("../utils/functions/friendshipUtils");
 
 class SearchController {
   static async getPeople(req, res) {
