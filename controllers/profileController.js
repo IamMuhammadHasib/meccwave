@@ -1,5 +1,6 @@
 const { User } = require("../models/User");
 const userFields = require("../utils/constants/userFields");
+const getFriendshipStatus = require("../utils/functions/friendshipUtils");
 
 class ProfileController {
   static async getProfile(req, res) {
@@ -8,7 +9,8 @@ class ProfileController {
 
       const userProfile = await User.findById(userId)
         .select(userFields.FULL_PROFILE)
-        .populate("profile");
+        .populate("profile")
+        .lean();
 
       if (!userProfile) {
         return res.status(404).json({
@@ -16,6 +18,9 @@ class ProfileController {
           message: "User profile not found",
         });
       }
+
+      const loggedInUserId = req.user.id;
+      userProfile["status"] = await getFriendshipStatus(loggedInUserId, userId);
 
       res.status(200).json({
         statusCode: 200,
