@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Socket.IO Client</title>
+    <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script> <!-- adjust version as needed -->
+
+</head>
+
+<body>
+    <script>
+        const socket = io("http://localhost:5000", {
+            auth: {
+                token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3MTNlMmQyMzRjYTIwYjVmYzU1ZTBlOCIsImlhdCI6MTczMDIxOTU1NSwiZXhwIjoxNzMwMjIzMTU1fQ.adgDtDpOnZL6WO9eYR-gVKaotKWf692dnRk-ylgSMCU" // Replace with actual token
+            }
+        });
+
+        socket.on("connect", () => {
+            console.log("Connected:", socket.id);
+            socket.emit("joinRoom", { userId: "6713e2b234ca20b5fc55e0e1", receiverId: "6713e2d234ca20b5fc55e0e8" });
+        });
+        console.log('...');
+
+        socket.on("receiveMessage", (data) => {
+            console.log("Message received:", data);
+        });
+    </script>
+</body>
+
+</html>
