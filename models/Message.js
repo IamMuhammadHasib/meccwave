@@ -22,7 +22,7 @@ const messageSchema = new mongoose.Schema(
       default: Date.now,
     },
     status: {
-      type: string,
+      type: String,
       enum: ["sent", "delivered", "read"],
       default: "sent",
     },
@@ -30,6 +30,6 @@ const messageSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-const Message = mongoose.Model("Message", messageSchema);
+const Message = mongoose.model("Message", messageSchema);
 
 module.exports = { Message, messageSchema };
