@@ -5,6 +5,7 @@ const searchRoutes = require("./searchRoutes");
 const friendRoutes = require("./friendRoutes");
 const friendRequestRoutes = require("./friendRequestRoutes");
 const postRoutes = require("./postRoutes");
+const messageRoutes = require('./messageRoutes');
 
 // Function to register all routes
 const registerRoutes = (app) => {
@@ -14,9 +15,9 @@ const registerRoutes = (app) => {
   app.use("/friends", friendRoutes);
   app.use("/friend-request", friendRequestRoutes);
   app.use("/posts", postRoutes);
+  app.use("/messages", messageRoutes);
 
-  // Add future routes here
-  // app.use("/posts", postsRoutes);
+  //
 };
 
 module.exports = registerRoutes;
