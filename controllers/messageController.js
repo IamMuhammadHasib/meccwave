@@ -6,11 +6,13 @@ class MessageController {
     try {
       const sender = req.user.id;
       const receiver = req.params.id;
+      const time = req.params.time;
 
       const roomId = getRoomId(sender, receiver);
       console.log(roomId);
       const conversation = await Conversation.findOne({roomId}).populate({
         path: "messages",
+        match: { sentAt: {$lt: new Date(time) } },
         select: "content media sentAt status",
         options: { sort: { sentAt: -1 }, limit: 15 },
         populate: [{ path: "senderId", select: "username" }, { path: "media" }],
