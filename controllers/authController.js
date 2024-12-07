@@ -48,14 +48,14 @@ class AuthController {
         expiresIn: "1h",
       });
 
-      // Populate the profile data
+      // profile data
       const populatedUser = await User.findById(user.id)
         .populate({
           path: "profile",
-          select: "name profilePicture", // Only return the necessary fields from the Profile
+          select: "name profilePicture",
           populate: {
-            path: "profilePicture", // Assuming profilePicture references a Media model
-            select: "url", // Only return the URL of the profile picture
+            path: "profilePicture",
+            select: "url",
           },
         })
         .select("username profile");
@@ -69,7 +69,7 @@ class AuthController {
           username: populatedUser.username,
           profile: {
             name: populatedUser.profile.name,
-            profilePicture: populatedUser.profile.profilePicture?.url || null, // Return profile picture URL if available
+            profilePicture: populatedUser.profile.profilePicture?.url || null,
           },
         },
       });
@@ -103,7 +103,7 @@ class AuthController {
           .json({ statusCode: 400, message: "Invalid credentials" });
       }
 
-      // Generate JWT token
+      // token generation
       const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
         expiresIn: "1h",
       });
