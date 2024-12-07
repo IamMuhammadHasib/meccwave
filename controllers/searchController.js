@@ -16,7 +16,7 @@ class SearchController {
       // case-insensitive search
       const regex = new RegExp(keyword, "i");
 
-      // Use aggregation to search both User and Profile collections
+      // search both User and Profile collections
       const people = await User.aggregate([
         {
           $lookup: {
@@ -26,14 +26,14 @@ class SearchController {
             as: "profile",
           },
         },
-        { $unwind: "$profile" }, // Flatten the profile array
+        { $unwind: "$profile" },
         {
           $match: {
             $or: [
               { username: regex },
               { email: regex },
               { phone: regex },
-              { "profile.name": regex }, // Search within the profile name
+              { "profile.name": regex },
             ],
           },
         },

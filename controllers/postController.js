@@ -42,7 +42,7 @@ class postController {
       if (media) {
         const enrichedMedia = media.map((item) => ({
           ...item,
-          userId, // Add userId field
+          userId,
         }));
         const mediaDocuments = await Media.insertMany(enrichedMedia);
         mediaIds = mediaDocuments.map((doc) => doc._id);
@@ -52,7 +52,7 @@ class postController {
         author: userId,
         content: {
           text,
-          media: mediaIds, // Store ObjectIds here
+          media: mediaIds,
         },
         visibility,
       });
