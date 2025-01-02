@@ -26,14 +26,18 @@ module.exports = (io) => {
       "sendMessage",
       async ({ roomId, message, senderId, media = [] }) => {
         io.to(roomId).emit("receiveMessage", { message, senderId, media });
-
+        console.log(roomId);
         try {
+          const [user1, user2] = roomId.split("-");
+
           let conversation = await Conversation.findOne({ roomId });
+          console.log(user1, user2, conversation);
 
           if (!conversation) {
+            console.log("Creating new conversation");
             conversation = new Conversation({
               roomId,
-              participants: [senderId],
+              participants: [user1, user2],
               messages: [],
             });
             await conversation.save();
