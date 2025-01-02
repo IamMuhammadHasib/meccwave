@@ -18,6 +18,8 @@ module.exports = (io) => {
       const roomId = getRoomId(userId, receiverId);
       socket.join(roomId);
       console.log(`User ${userId} joined room ${roomId}`);
+
+      socket.emit("joinedInRoom", { roomId });
     });
 
     socket.on(
