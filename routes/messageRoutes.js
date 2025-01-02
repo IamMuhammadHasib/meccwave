@@ -5,5 +5,6 @@ const authenticate = require("../middlewares/authenticationMiddleware");
 const MessageController = require("../controllers/messageController");
 
 router.get("/:id/:time", authenticate, MessageController.getMessages);
+router.get("/chatList", authenticate, MessageController.getChatPersonsList);
 
 module.exports = router;
