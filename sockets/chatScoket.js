@@ -1,5 +1,8 @@
 const { Conversation } = require("../models/Conversation");
 const { Message } = require("../models/Message");
+const mongoose = require("mongoose");
+
+const ObjectId = mongoose.Types.ObjectId;
 
 const getRoomId = (user1, user2) => {
   return [user1, user2].sort().join("-");
@@ -19,42 +22,70 @@ module.exports = (io) => {
       socket.join(roomId);
       console.log(`User ${userId} joined room ${roomId}`);
 
-      socket.emit("joinedInRoom", { roomId });
+      socket.emit("joinedInRoom", { roomId, userId });
     });
 
     socket.on(
       "sendMessage",
       async ({ roomId, message, senderId, media = [] }) => {
-        io.to(roomId).emit("receiveMessage", { message, senderId, media });
-        console.log(roomId);
+        const messageId = new ObjectId(); // Generate a unique ID
+        console.log(`Generated Message ID: ${messageId}`);
+
+        const recipientId = roomId.split("-").find((id) => id !== senderId);
+        console.log(`Recipient ID: ${recipientId}`);
+
+        // Check if the recipient is active in the room
+        const room = io.sockets.adapter.rooms.get(roomId);
+        const isRecipientInRoom = room && room.has(recipientId);
+        const isRecipientActive = io.sockets.sockets.get(recipientId); // Check if the recipient socket exists
+
+        let status;
+        if (isRecipientInRoom) {
+          status = "seen";
+        } else if (isRecipientActive) {
+          status = "delivered";
+        } else {
+          status = "sent";
+        }
+
+        console.log(`Message status: ${status}`);
+
+        // Emit the message with the appropriate status
+        io.to(roomId).emit("receiveMessage", {
+          messageId,
+          message,
+          senderId,
+          media,
+          status,
+        });
+
         try {
-          const [user1, user2] = roomId.split("-");
+          // Save the message to the database
+          const newMessage = await Message.create({
+            _id: messageId,
+            senderId,
+            content: message,
+            media,
+            sentAt: new Date(),
+            status,
+          });
 
           let conversation = await Conversation.findOne({ roomId });
-          console.log(user1, user2, conversation);
-
           if (!conversation) {
-            console.log("Creating new conversation");
             conversation = new Conversation({
               roomId,
-              participants: [user1, user2],
+              participants: roomId.split("-"),
               messages: [],
             });
             await conversation.save();
           }
 
-          const newMessage = await Message.create({
-            senderId,
-            content: message,
-            media,
-            sentAt: new Date(),
-            status: "sent",
-          });
-
           conversation.messages.push(newMessage._id);
           await conversation.save();
 
-          console.log(`Message stored in DB for room ${roomId}: ${message}`);
+          console.log(
+            `Message stored in DB for room ${roomId}: ${message}, Status: ${status}`
+          );
         } catch (error) {
           console.error("Error storing message:", error);
         }
