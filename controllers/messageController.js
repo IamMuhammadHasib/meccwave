@@ -44,7 +44,7 @@ class MessageController {
       });
 
       if (!conversations.length) {
-        return res.status(404).json({ message: "No chats found" });
+        return res.error("No chats found", 404);
       }
 
       // Transform the data into the desired structure
@@ -55,13 +55,18 @@ class MessageController {
         );
 
         return {
+          id: otherParticipant?._id || "Unknown",
           username: otherParticipant?.username || "Unknown",
           name: otherParticipant?.profile?.name || "Unknown",
           profilePicture: otherParticipant?.profile?.profilePicture || null,
         };
       });
 
-      return res.status(200).json(chatPersonsList);
+      return res.success(
+        { chatList: chatPersonsList },
+        "Chat list retrieved successfully",
+        200
+      );
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: "Server error" });
@@ -87,9 +92,7 @@ class MessageController {
       });
 
       if (!conversations || conversations.length === 0) {
-        return res
-          .status(404)
-          .json({ message: "No undelivered messages found" });
+        return res.error("No conversation found", 404);
       }
 
       // Extract undelivered messages from all conversations
@@ -98,7 +101,7 @@ class MessageController {
       );
 
       if (undeliveredMessages.length === 0) {
-        return res.status(200).json({ messages: [] });
+        return res.error("No message found", 404);
       }
 
       // Update the status of undelivered messages to "delivered"
@@ -108,17 +111,21 @@ class MessageController {
         { $set: { status: "delivered" } }
       );
 
-      return res.status(200).json({ messages: undeliveredMessages });
+      return res.success(
+        { messages: undeliveredMessages },
+        "Messages retrieved successfully",
+        200
+      );
     } catch (error) {
       console.error("Error fetching undelivered messages:", error);
-      res.status(500).json({ message: "Server error" });
+      return res.error("Server error", 500);
     }
   }
 
   static async markMessagesAsSeen(req, res) {
     try {
       const { roomId, userId } = req.body;
-      if(!roomId || !userId) {
+      if (!roomId || !userId) {
         return res.error("Invalid request", 400);
       }
 
@@ -136,9 +143,7 @@ class MessageController {
       });
 
       if (!conversation || !conversation.messages.length) {
-        return res
-          .status(200)
-          .json({ message: "No unseen messages found for this room" });
+        return res.error("No unseen messages found for this room", 404);
       }
 
       // Extract message IDs to update
@@ -154,9 +159,7 @@ class MessageController {
         `${result.modifiedCount} messages marked as seen in room ${roomId}`
       );
 
-      res.status(200).json({
-        message: "Messages marked as seen"
-      });
+      return res.success({}, "Messages marked as seen", 200);
     } catch (error) {
       console.error("Error marking messages as seen:", error);
       res.status(500).json({ message: "Server error" });
