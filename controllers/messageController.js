@@ -118,6 +118,9 @@ class MessageController {
   static async markMessagesAsSeen(req, res) {
     try {
       const { roomId, userId } = req.body;
+      if(!roomId || !userId) {
+        return res.error("Invalid request", 400);
+      }
 
       // Fetch the conversation and populate messages
       const conversation = await Conversation.findOne({

@@ -4,7 +4,9 @@ const validate = (schema) => {
     const validationResult = schema.safeParse(req.body);
 
     if (!validationResult.success) {
-      return res.status(400).json({ errors: validationResult.error.errors });
+      const firstError =
+        validationResult.error.errors[0]?.message || "Validation failed";
+      return res.error(firstError, 400);
     }
 
     next();

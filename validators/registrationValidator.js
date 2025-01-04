@@ -7,11 +7,11 @@ const genderSchema = require("../schema/genderSchema");
 const birthYearSchema = require("../schema/birthYearSchema");
 
 const registrationSchema = z.object({
-  emailPhone: emailPhoneSchema,
-  password: passwordSchema,
   name: nameSchema,
   gender: genderSchema,
   birthYear: birthYearSchema,
+  emailPhone: emailPhoneSchema,
+  password: passwordSchema,
 });
 
 module.exports = registrationSchema;
