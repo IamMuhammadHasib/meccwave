@@ -34,11 +34,11 @@ const upload = multer({
 const fileUploadMiddleware = (req, res, next) => {
   upload(req, res, async (err) => {
     if (err) {
-      return res.status(400).json({ message: err.message });
+      return res.error(err.message, 400);
     }
 
     if (!req.file) {
-      return res.status(400).json({ message: "No file uploaded!" });
+      return res.error("No file uploaded!", 400);
     }
 
     try {
@@ -47,7 +47,7 @@ const fileUploadMiddleware = (req, res, next) => {
         { resource_type: "auto" }, // Auto-detects whether it's an image or video
         (error, uploadResult) => {
           if (error) {
-            return res.status(500).json({ message: error.message });
+            return res.error("Error uploading file", 500);
           }
 
           // Add the uploaded file info to req.body
@@ -66,7 +66,8 @@ const fileUploadMiddleware = (req, res, next) => {
       // Write the file buffer to the stream
       result.end(req.file.buffer);
     } catch (error) {
-      return res.status(500).json({ message: error.message });
+      console.log(error);
+      return res.error("Server error", 500);
     }
   });
 };

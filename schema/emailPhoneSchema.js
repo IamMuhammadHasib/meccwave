@@ -4,7 +4,7 @@ const { PHONE_REGEX } = require("../utils/constants/regex");
 const numericWithOnePlus = /^(\+?\d+|\d+\+?\d*)$/;
 
 const emailPhoneSchema = z
-  .string()
+  .string({ message: "Invalid email address or phone number" })
   .refine(
     (value) => {
       const containsAtSymbol = value.includes("@");

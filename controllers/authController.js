@@ -19,10 +19,7 @@ class AuthController {
 
       const existingUser = await User.findOne(contactField);
       if (existingUser) {
-        return res.status(400).json({
-          statusCode: 400,
-          message: "Email or phone is already in use",
-        });
+        return res.error("Email or phone is already in use", 400);
       }
 
       const username = await AuthController.generateUniqueUsername(name);
@@ -60,22 +57,24 @@ class AuthController {
         })
         .select("username profile");
 
-      res.status(201).json({
-        statusCode: 201,
-        message: "User registered successfully",
-        token,
-        user: {
-          id: populatedUser.id,
-          username: populatedUser.username,
-          profile: {
-            name: populatedUser.profile.name,
-            profilePicture: populatedUser.profile.profilePicture?.url || null,
+      return res.success(
+        {
+          token,
+          user: {
+            id: populatedUser.id,
+            username: populatedUser.username,
+            profile: {
+              name: populatedUser.profile.name,
+              profilePicture: populatedUser.profile.profilePicture?.url || null,
+            },
           },
         },
-      });
+        "User registered successfully",
+        201
+      );
     } catch (error) {
       console.error(error);
-      res.status(500).json({ statusCode: 500, message: "Server error" });
+      return res.error("Server error", 500);
     }
   }
 
@@ -91,16 +90,12 @@ class AuthController {
 
       const user = await User.findOne(contactField);
       if (!user) {
-        return res
-          .status(404)
-          .json({ statusCode: 404, message: "User not found" });
+        return res.error("User not found", 404);
       }
 
       const isMatch = await bcrypt.compare(password, user.password);
       if (!isMatch) {
-        return res
-          .status(400)
-          .json({ statusCode: 400, message: "Invalid credentials" });
+        return res.error("Invalid credentials", 400);
       }
 
       // token generation
@@ -119,32 +114,34 @@ class AuthController {
         })
         .select("username profile");
 
-      res.status(200).json({
-        statusCode: 200,
-        message: "Login successful",
-        token,
-        user: {
-          id: populatedUser.id,
-          username: populatedUser.username,
-          profile: {
-            name: populatedUser.profile.name,
-            profilePicture: populatedUser.profile.profilePicture?.url || null,
+      return res.success(
+        {
+          token,
+          user: {
+            id: populatedUser.id,
+            username: populatedUser.username,
+            profile: {
+              name: populatedUser.profile.name,
+              profilePicture: populatedUser.profile.profilePicture?.url || null,
+            },
           },
         },
-      });
+        "Login successful",
+        200
+      );
     } catch (error) {
       console.error(error);
-      res.status(500).json({ statusCode: 500, message: "Server error" });
+      return res.error("Server error", 500);
     }
   }
 
   static getCsrfToken(req, res) {
     try {
       const csrfToken = setCsrfToken(req, res); // this will set the cookie
-      res.status(200).json({ statusCode: 200, csrfToken });
+      return res.success({ csrfToken }, "CSRF token generated successfully", 200);
     } catch (error) {
       console.error("Error generating CSRF token", error);
-      res.status(500).json({ statusCode: 500, message: "Server error" });
+      return res.error("Server error", 500);
     }
   }
 

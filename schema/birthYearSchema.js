@@ -1,7 +1,7 @@
 const { z } = require("zod");
 
 const birthYearSchema = z
-  .string()
+  .string({ message: "Invalid year format" })
   .transform((str) => Number(str))
   .refine((val) => !isNaN(val), { message: "Must be a valid number" })
   .refine((val) => Number.isInteger(val), { message: "Must be an integer" })
