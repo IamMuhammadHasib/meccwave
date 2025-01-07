@@ -23,6 +23,7 @@ module.exports = (io) => {
       }
       userSockets.get(userId).push(socket.id);
       socket.userId = userId; // Attach userId to the socket
+      console.log(userSockets);
       console.log(`User ${userId} connected with socket ${socket.id}`);
     });
 
@@ -65,6 +66,7 @@ module.exports = (io) => {
 
           // Emit receiveMessage to all recipient sockets and sender sockets
           const senderSockets = userSockets.get(senderId) || [];
+          console.log(userSockets, senderSockets);
           senderSockets.forEach((senderSocketId) => {
             io.to(senderSocketId).emit("receiveMessage", {
               roomId,
@@ -123,6 +125,7 @@ module.exports = (io) => {
         !Array.isArray(participants) ||
         participants.length === 0
       ) {
+        console.log(userId, participants);
         console.error("Invalid userId or participants array");
         return;
       }
@@ -139,12 +142,14 @@ module.exports = (io) => {
       } else {
         roomId = `group-${new ObjectId()}`;
       }
+      console.log(roomId);
 
       try {
         // Check if a conversation already exists
         const existingConversation = await Conversation.findOne({
           participants: allParticipants,
         });
+        console.log(existingConversation);
 
         if (existingConversation) {
           console.log(
@@ -159,7 +164,7 @@ module.exports = (io) => {
         // Create a new conversation
         const newConversation = new Conversation({
           roomId,
-          participants: allParticipants.map((id) => ObjectId(id)),
+          participants: allParticipants.map((id) => new ObjectId(id)),
           messages: [],
         });
         await newConversation.save();
