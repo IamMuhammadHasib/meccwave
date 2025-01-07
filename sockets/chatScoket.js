@@ -87,7 +87,7 @@ module.exports = (io) => {
                 content,
                 media,
                 sentAt,
-                status='sent'
+                status:'sent'
               });
             });
           }
