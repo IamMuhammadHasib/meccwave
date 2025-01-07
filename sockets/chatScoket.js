@@ -4,96 +4,232 @@ const mongoose = require("mongoose");
 
 const ObjectId = mongoose.Types.ObjectId;
 
-const getRoomId = (user1, user2) => {
-  return [user1, user2].sort().join("-");
-};
+// Utility to create a room ID for a conversation
+const getRoomId = (user1, user2) => [user1, user2].sort().join("-");
 
 module.exports = (io) => {
+  // Active socket mapping: userId -> array of socket IDs
+  const userSockets = new Map();
+
   io.on("connection", (socket) => {
     console.log(`User connected: ${socket.id}`);
 
-    socket.on("joinRoom", ({ userId, receiverId }) => {
-      if (!userId || !receiverId) {
-        console.error("Missing userId or receiverId");
-        return;
+    // Register user and map their socket
+    socket.on("registerUser", ({ userId }) => {
+      // const { userId } = data;
+      console.log(userId);
+      if (!userSockets.has(userId)) {
+        userSockets.set(userId, []);
       }
-
-      const roomId = getRoomId(userId, receiverId);
-      socket.join(roomId);
-      console.log(`User ${userId} joined room ${roomId}`);
-
-      socket.emit("joinedInRoom", { roomId, userId });
+      userSockets.get(userId).push(socket.id);
+      socket.userId = userId; // Attach userId to the socket
+      console.log(`User ${userId} connected with socket ${socket.id}`);
     });
 
+    // Send a message
     socket.on(
       "sendMessage",
-      async ({ roomId, message, senderId, media = [] }) => {
-        const messageId = new ObjectId(); // Generate a unique ID
-        console.log(`Generated Message ID: ${messageId}`);
+      async ({ roomId, content, senderId, media = [], sentAt }) => {
+        console.log(roomId);
+        const messageId = new ObjectId();
 
-        const recipientId = roomId.split("-").find((id) => id !== senderId);
-        console.log(`Recipient ID: ${recipientId}`);
+        console.log(`Message from ${senderId} in ${roomId}`);
 
-        // Check if the recipient is active in the room
-        const room = io.sockets.adapter.rooms.get(roomId);
-        const isRecipientInRoom = room && room.has(recipientId);
-        const isRecipientActive = io.sockets.sockets.get(recipientId); // Check if the recipient socket exists
-
-        let status;
-        if (isRecipientInRoom) {
-          status = "seen";
-        } else if (isRecipientActive) {
-          status = "delivered";
-        } else {
-          status = "sent";
-        }
-
-        console.log(`Message status: ${status}`);
-
-        // Emit the message with the appropriate status
-        io.to(roomId).emit("receiveMessage", {
-          messageId,
-          message,
-          senderId,
-          media,
-          status,
-        });
-
+        // Save the message in the database
         try {
-          // Save the message to the database
           const newMessage = await Message.create({
             _id: messageId,
             senderId,
-            content: message,
+            content,
             media,
-            sentAt: new Date(),
-            status,
+            sentAt,
+            status: "sent",
           });
 
-          let conversation = await Conversation.findOne({ roomId });
+          let conversation = await Conversation.findOne({ roomId }).populate(
+            "participants",
+            "_id"
+          );
           if (!conversation) {
-            conversation = new Conversation({
-              roomId,
-              participants: roomId.split("-"),
-              messages: [],
-            });
-            await conversation.save();
+            console.error(`Conversation with roomId ${roomId} not found.`);
+            return;
           }
 
           conversation.messages.push(newMessage._id);
           await conversation.save();
 
-          console.log(
-            `Message stored in DB for room ${roomId}: ${message}, Status: ${status}`
+          // Identify all participants except the sender
+          const recipients = conversation.participants.filter(
+            (participant) => participant._id.toString() !== senderId
           );
+
+          // Emit receiveMessage to all recipient sockets and sender sockets
+          const senderSockets = userSockets.get(senderId) || [];
+          senderSockets.forEach((senderSocketId) => {
+            io.to(senderSocketId).emit("receiveMessage", {
+              roomId,
+              messageId,
+              senderId,
+              content,
+              media,
+              sentAt
+            });
+          });
+
+          for (const recipient of recipients) {
+            const recipientSockets =
+              userSockets.get(recipient._id.toString()) || [];
+            recipientSockets.forEach((recipientSocketId) => {
+              io.to(recipientSocketId).emit("receiveMessage", {
+                roomId,
+                messageId,
+                senderId,
+                content,
+                media,
+                sentAt,
+                status='sent'
+              });
+            });
+          }
+
+          // Notify sender sockets about delivery for each recipient
+          const senderAckPayload = {
+            roomId,
+            messageId,
+            status: 'delivered'
+          };
+
+          for (const recipient of recipients) {
+            const recipientSockets =
+              userSockets.get(recipient._id.toString()) || [];
+            if (recipientSockets.length > 0) {
+              // Emit delivery ack to sender sockets
+              senderSockets.forEach((senderSocketId) => {
+                io.to(senderSocketId).emit("deliverAck", senderAckPayload);
+              });
+              break;
+            }
+          }
         } catch (error) {
-          console.error("Error storing message:", error);
+          console.error("Error saving message:", error);
         }
       }
     );
 
+    // Create a room for chat
+    socket.on("createRoom", async ({ userId, participants }) => {
+      if (
+        !userId ||
+        !Array.isArray(participants) ||
+        participants.length === 0
+      ) {
+        console.error("Invalid userId or participants array");
+        return;
+      }
+
+      let allParticipants = [userId, ...participants];
+      allParticipants = allParticipants.sort((a, b) =>
+        a.toString().localeCompare(b.toString())
+      );
+      let roomId;
+
+      // Determine room type and generate unique room ID
+      if (allParticipants.length === 2) {
+        roomId = `private-${new ObjectId()}`;
+      } else {
+        roomId = `group-${new ObjectId()}`;
+      }
+
+      try {
+        // Check if a conversation already exists
+        const existingConversation = await Conversation.findOne({
+          participants: allParticipants,
+        });
+
+        if (existingConversation) {
+          console.log(
+            `Existing conversation found: ${existingConversation.roomId}`
+          );
+          socket.emit("createRoomAck", {
+            roomId: existingConversation.roomId,
+          });
+          return;
+        }
+
+        // Create a new conversation
+        const newConversation = new Conversation({
+          roomId,
+          participants: allParticipants.map((id) => ObjectId(id)),
+          messages: [],
+        });
+        await newConversation.save();
+
+        console.log(`Room created with ID: ${roomId}`);
+
+        // Emit acknowledgment with the room ID
+        socket.emit("createRoomAck", { roomId });
+      } catch (error) {
+        console.error("Error creating room:", error);
+      }
+    });
+
+    // Handle message seen acknowledgment
+    socket.on("seenMessage", async ({ roomId, messageIds, receiverId, seenAt }) => {
+      console.log(`User ${receiverId} marked messages as seen in ${roomId}`);
+
+      try {
+        // Update messages to "seen" in the database
+        await Message.updateMany(
+          { _id: { $in: messageIds }, roomId },
+          { $set: { seenAt, status: "seen" } }
+        );
+
+        // Fetch all participants for the room
+        const conversation = await Conversation.findOne({ roomId }).populate(
+          "participants",
+          "_id"
+        );
+        if (!conversation) {
+          console.error(`Conversation with roomId ${roomId} not found.`);
+          return;
+        }
+
+        const participants = conversation.participants.filter(
+          (participant) => participant._id.toString() !== receiverId
+        );
+
+        // Notify all participants (excluding the receiver) about the seen status
+        for (const participant of participants) {
+          const participantSockets =
+            userSockets.get(participant._id.toString()) || [];
+          participantSockets.forEach((participantSocketId) => {
+            io.to(participantSocketId).emit("seenAck", {
+              roomId,
+              messageIds,
+              receiverId, // The user who marked the messages as seen
+              seenAt,
+              status: "seen"
+            });
+          });
+        }
+      } catch (error) {
+        console.error("Error updating message status to 'seen':", error);
+      }
+    });
+
+    // Handle user disconnection
     socket.on("disconnect", () => {
-      console.log(`User disconnected: ${socket.id}`);
+      const userId = socket.userId;
+      if (userId) {
+        const sockets = userSockets.get(userId) || [];
+        const updatedSockets = sockets.filter((id) => id !== socket.id);
+        if (updatedSockets.length > 0) {
+          userSockets.set(userId, updatedSockets);
+        } else {
+          userSockets.delete(userId);
+        }
+        console.log(`User ${userId} disconnected from socket ${socket.id}`);
+      }
     });
   });
 };
