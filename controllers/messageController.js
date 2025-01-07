@@ -20,10 +20,14 @@ class MessageController {
       });
 
       if (!conversation) {
-        return res.status(404).json({ message: "No conversation to show" });
+        return res.success({ messages: [] }, "No messages found", 200);
       }
 
-      return res.status(200).json({ messsages: conversation.messages });
+      return res.success(
+        { messages: conversation.messages.reverse() },
+        "Messages retrieved successfully",
+        200
+      );
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: "Server error" });
@@ -46,7 +50,11 @@ class MessageController {
         });
 
       if (!conversations.length) {
-        return res.error("No chats found", 404);
+        return res.success(
+          { chatList: [] },
+          "Chat list retrieved successfully",
+          200
+        );
       }
 
       // Transform the data into the desired structure
@@ -104,7 +112,11 @@ class MessageController {
       );
 
       if (undeliveredMessages.length === 0) {
-        return res.error("No message found", 404);
+        return res.success(
+          { messages: [] },
+          "No undelivered messages found",
+          200
+        );
       }
 
       // Update the status of undelivered messages to "delivered"
@@ -146,7 +158,7 @@ class MessageController {
       });
 
       if (!conversation || !conversation.messages.length) {
-        return res.error("No unseen messages found for this room", 404);
+        return res.success({}, "No unseen message to mark", 200);
       }
 
       // Extract message IDs to update
