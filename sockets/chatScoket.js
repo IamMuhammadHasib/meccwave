@@ -86,7 +86,8 @@ module.exports = (io) => {
                 senderId,
                 content,
                 media,
-                sentAt
+                sentAt,
+                status='sent'
               });
             });
           }
@@ -94,7 +95,8 @@ module.exports = (io) => {
           // Notify sender sockets about delivery for each recipient
           const senderAckPayload = {
             roomId,
-            messageId
+            messageId,
+            status: 'delivered'
           };
 
           for (const recipient of recipients) {
@@ -205,7 +207,8 @@ module.exports = (io) => {
               roomId,
               messageIds,
               receiverId, // The user who marked the messages as seen
-              seenAt
+              seenAt,
+              status: "seen"
             });
           });
         }
