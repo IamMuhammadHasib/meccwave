@@ -37,11 +37,13 @@ class MessageController {
       // Find all conversations where the user is a participant
       const conversations = await Conversation.find({
         participants: userId,
-      }).populate({
-        path: "participants",
-        select: "username profile",
-        populate: { path: "profile", select: "name profilePicture" },
-      });
+      })
+        .select("roomId participants")
+        .populate({
+          path: "participants",
+          select: "username profile",
+          populate: { path: "profile", select: "name profilePicture" },
+        });
 
       if (!conversations.length) {
         return res.error("No chats found", 404);
@@ -56,6 +58,7 @@ class MessageController {
 
         return {
           id: otherParticipant?._id || "Unknown",
+          roomId: conversation.roomId || "Unknown",
           username: otherParticipant?.username || "Unknown",
           name: otherParticipant?.profile?.name || "Unknown",
           profilePicture: otherParticipant?.profile?.profilePicture || null,

@@ -21,6 +21,9 @@ const messageSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    seenAt: {
+      type: Date,
+    },
     status: {
       type: String,
       enum: ["sent", "delivered", "seen"],
