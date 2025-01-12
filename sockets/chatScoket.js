@@ -30,11 +30,10 @@ module.exports = (io) => {
     // Send a message
     socket.on(
       "sendMessage",
-      async ({ roomId, content, senderId, media = [], sentAt }) => {
+      async ({ roomId, messageId, content, senderId, media = [], sentAt }) => {
         console.log(roomId);
-        const messageId = new ObjectId();
 
-        console.log(`Message from ${senderId} in ${roomId}`);
+        console.log(`Message from ${senderId} in ${roomId} with ID ${messageId}, message: ${content}`);
 
         // Save the message in the database
         try {
