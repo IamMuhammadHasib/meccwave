@@ -21,6 +21,9 @@ const messageSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    deliveredAt: {
+      type: Date,
+    },
     seenAt: {
       type: Date,
     },
