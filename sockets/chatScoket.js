@@ -33,7 +33,9 @@ module.exports = (io) => {
       async ({ roomId, messageId, content, senderId, media = [], sentAt }) => {
         console.log(roomId);
 
-        console.log(`Message from ${senderId} in ${roomId} with ID ${messageId}, message: ${content}`);
+        console.log(
+          `Message from ${senderId} in ${roomId} with ID ${messageId}, message: ${content}`
+        );
 
         // Save the message in the database
         try {
@@ -73,7 +75,7 @@ module.exports = (io) => {
               senderId,
               content,
               media,
-              sentAt
+              sentAt,
             });
           });
 
@@ -88,25 +90,28 @@ module.exports = (io) => {
                 content,
                 media,
                 sentAt,
-                status:'sent'
+                status: "sent",
               });
             });
           }
 
-          // Notify sender sockets about delivery for each recipient
-          const senderAckPayload = {
-            roomId,
-            messageId,
-            status: 'delivered'
-          };
 
           for (const recipient of recipients) {
             const recipientSockets =
-              userSockets.get(recipient._id.toString()) || [];
+            userSockets.get(recipient._id.toString()) || [];
             if (recipientSockets.length > 0) {
+              // Notify sender sockets about delivery for each recipient
+              const senderAckPayload = {
+                roomId,
+                messageIds: [messageId],
+                receiverId: recipient._id, // The user who marked the messages as delivered
+                deliveredAt: Date.now(),
+                status: "delivered",
+              };
+
               // Emit delivery ack to sender sockets
               senderSockets.forEach((senderSocketId) => {
-                io.to(senderSocketId).emit("deliverAck", senderAckPayload);
+                io.to(senderSocketId).emit("deliveredAck", senderAckPayload);
               });
               break;
             }
@@ -178,48 +183,96 @@ module.exports = (io) => {
     });
 
     // Handle message seen acknowledgment
-    socket.on("seenMessage", async ({ roomId, messageIds, receiverId, seenAt }) => {
-      console.log(`User ${receiverId} marked messages as seen in ${roomId}`);
+    socket.on(
+      "seenMessage",
+      async ({ roomId, messageIds, receiverId, seenAt }) => {
+        console.log(`User ${receiverId} marked messages as seen in ${roomId}`);
 
-      try {
-        // Update messages to "seen" in the database
-        await Message.updateMany(
-          { _id: { $in: messageIds }, roomId },
-          { $set: { seenAt, status: "seen" } }
-        );
+        try {
+          // Update messages to "seen" in the database
+          await Message.updateMany(
+            { _id: { $in: messageIds }, roomId },
+            { $set: { seenAt, status: "seen" } }
+          );
 
-        // Fetch all participants for the room
-        const conversation = await Conversation.findOne({ roomId }).populate(
-          "participants",
-          "_id"
-        );
-        if (!conversation) {
-          console.error(`Conversation with roomId ${roomId} not found.`);
-          return;
-        }
+          // Fetch all participants for the room
+          const conversation = await Conversation.findOne({ roomId }).populate(
+            "participants",
+            "_id"
+          );
+          if (!conversation) {
+            console.error(`Conversation with roomId ${roomId} not found.`);
+            return;
+          }
 
-        const participants = conversation.participants.filter(
-          (participant) => participant._id.toString() !== receiverId
-        );
+          const participants = conversation.participants;
 
-        // Notify all participants (excluding the receiver) about the seen status
-        for (const participant of participants) {
-          const participantSockets =
-            userSockets.get(participant._id.toString()) || [];
-          participantSockets.forEach((participantSocketId) => {
-            io.to(participantSocketId).emit("seenAck", {
-              roomId,
-              messageIds,
-              receiverId, // The user who marked the messages as seen
-              seenAt,
-              status: "seen"
+          // Notify all participants about the seen status
+          for (const participant of participants) {
+            const participantSockets =
+              userSockets.get(participant._id.toString()) || [];
+            participantSockets.forEach((participantSocketId) => {
+              io.to(participantSocketId).emit("seenAck", {
+                roomId,
+                messageIds,
+                receiverId, // The user who marked the messages as seen
+                seenAt,
+                status: "seen",
+              });
             });
-          });
+          }
+        } catch (error) {
+          console.error("Error updating message status to 'seen':", error);
         }
-      } catch (error) {
-        console.error("Error updating message status to 'seen':", error);
       }
-    });
+    );
+
+    // Handle message delivered acknowledgment
+    socket.on(
+      "deliveredMessage",
+      async ({ roomId, messageIds, receiverId, deliveredAt }) => {
+        console.log(
+          `User ${receiverId} marked messages as delivered in ${roomId}`
+        );
+
+        try {
+          // Update messages to "delivered" in the database
+          await Message.updateMany(
+            { _id: { $in: messageIds }, roomId },
+            { $set: { deliveredAt, status: "delivered" } }
+          );
+
+          // Fetch all participants for the room
+          const conversation = await Conversation.findOne({ roomId }).populate(
+            "participants",
+            "_id"
+          );
+          if (!conversation) {
+            console.error(`Conversation with roomId ${roomId} not found.`);
+            return;
+          }
+
+          const participants = conversation.participants;
+
+          // Notify all participants about the delivered status
+          for (const participant of participants) {
+            const participantSockets =
+              userSockets.get(participant._id.toString()) || [];
+            participantSockets.forEach((participantSocketId) => {
+              io.to(participantSocketId).emit("deliveredAck", {
+                roomId,
+                messageIds,
+                receiverId, // The user who marked the messages as delivered
+                deliveredAt,
+                status: "delivered",
+              });
+            });
+          }
+        } catch (error) {
+          console.error("Error updating message status to 'delivered':", error);
+        }
+      }
+    );
 
     // Handle user disconnection
     socket.on("disconnect", () => {
