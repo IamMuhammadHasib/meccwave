@@ -119,12 +119,12 @@ class MessageController {
         );
       }
 
-      // Update the status of undelivered messages to "delivered"
-      const messageIds = undeliveredMessages.map((message) => message._id);
-      await Message.updateMany(
-        { _id: { $in: messageIds } },
-        { $set: { status: "delivered" } }
-      );
+      // // Update the status of undelivered messages to "delivered"
+      // const messageIds = undeliveredMessages.map((message) => message._id);
+      // await Message.updateMany(
+      //   { _id: { $in: messageIds } },
+      //   { $set: { status: "delivered" } }
+      // );
 
       return res.success(
         { messages: undeliveredMessages },
@@ -178,6 +178,38 @@ class MessageController {
     } catch (error) {
       console.error("Error marking messages as seen:", error);
       res.status(500).json({ message: "Server error" });
+    }
+  }
+
+  static async getMessageStatuses(req, res) {
+    try {
+      const { messageIds } = req.body;
+
+      if (!Array.isArray(messageIds) || messageIds.length === 0) {
+        return res.error("Invalid or missing message IDs", 400);
+      }
+
+      // Fetch messages by their IDs
+      const messages = await Message.find(
+        { _id: { $in: messageIds } },
+        "_id status" // Select only the _id and status fields
+      );
+
+      // Map messages to their statuses
+      const statuses = messages.map((message) => ({
+        messageId: message._id,
+        status: message.status,
+      }));
+
+      // Return statuses
+      return res.success(
+        { statuses },
+        "Message statuses retrieved successfully",
+        200
+      );
+    } catch (error) {
+      console.error("Error fetching message statuses:", error);
+      return res.error("Server error", 500);
     }
   }
 }
